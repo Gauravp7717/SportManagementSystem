@@ -1,15 +1,16 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-async function connectDB() {
+export async function connectDB() {
   try {
     const response = await mongoose.connect(
       `${process.env.MONGODB_URI}/sport-management-system`
     );
-    console.log("connected to ", response.connection.host);
+
+    console.log("Connected to", response.connection.host);
   } catch (error) {
-    console.log(error.message);
+    console.error("MongoDB Connection Error:", error.message);
     process.exit(1);
   }
 }
 
-module.exports = connectDB;
+export default connectDB;
