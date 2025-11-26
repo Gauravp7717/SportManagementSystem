@@ -1,14 +1,20 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const tenantSchema = new mongoose.Schema(
   {
-    name: {
+    clubName: {
       type: String,
       required: true,
       unique: true,
     },
 
-    subdomain: {
+    clubAdmin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    subDomain: {
       type: String,
       required: true,
       unique: true,
@@ -37,4 +43,5 @@ const tenantSchema = new mongoose.Schema(
   { timestamps: true } // Automatically adds createdAt & updatedAt
 );
 
-module.exports = mongoose.model("Tenant", tenantSchema);
+const Tenant = mongoose.model("Tenant", tenantSchema);
+export default Tenant;

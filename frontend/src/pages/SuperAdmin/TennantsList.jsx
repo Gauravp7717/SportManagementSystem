@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import { useEffect } from "react";
+import { getAllTenants } from "../../api/tennantsapi";
+
 import {
   Search,
   Filter,
@@ -22,68 +25,23 @@ export default function TennantsList() {
   const navigate = useNavigate();
 
   // Sample clubs data
-  const clubs = [
-    {
-      _id: "1",
-      name: "Elite Fitness Club",
-      subdomain: "elitefitness",
-      plan: "PRO",
-      status: "ACTIVE",
-      createdAt: "2024-01-15T10:30:00Z",
-      updatedAt: "2024-11-20T14:22:00Z",
-      metadata: { members: 245, revenue: 125000 },
-    },
-    {
-      _id: "2",
-      name: "Downtown Sports Center",
-      subdomain: "downtownsports",
-      plan: "ENTERPRISE",
-      status: "ACTIVE",
-      createdAt: "2024-02-10T09:15:00Z",
-      updatedAt: "2024-11-25T11:45:00Z",
-      metadata: { members: 580, revenue: 350000 },
-    },
-    {
-      _id: "3",
-      name: "Yoga Wellness Studio",
-      subdomain: "yogawellness",
-      plan: "BASIC",
-      status: "ACTIVE",
-      createdAt: "2024-03-22T14:20:00Z",
-      updatedAt: "2024-11-18T16:30:00Z",
-      metadata: { members: 120, revenue: 45000 },
-    },
-    {
-      _id: "4",
-      name: "Power Gym",
-      subdomain: "powergym",
-      plan: "FREE",
-      status: "INACTIVE",
-      createdAt: "2024-04-05T08:45:00Z",
-      updatedAt: "2024-10-12T10:15:00Z",
-      metadata: { members: 35, revenue: 0 },
-    },
-    {
-      _id: "5",
-      name: "CrossFit Arena",
-      subdomain: "crossfitarena",
-      plan: "PRO",
-      status: "SUSPENDED",
-      createdAt: "2024-05-18T11:00:00Z",
-      updatedAt: "2024-11-10T09:20:00Z",
-      metadata: { members: 180, revenue: 95000 },
-    },
-    {
-      _id: "6",
-      name: "Pilates Plus",
-      subdomain: "pilatesplus",
-      plan: "BASIC",
-      status: "ACTIVE",
-      createdAt: "2024-06-12T15:30:00Z",
-      updatedAt: "2024-11-22T13:10:00Z",
-      metadata: { members: 95, revenue: 38000 },
-    },
-  ];
+  const [clubs, setClubs] = useState([]);
+
+  useEffect(() => {
+    async function fetchTenants() {
+      try {
+        const res = await getAllTenants();
+        if (res.data.success) {
+          // Backend returns "tenants"
+          setClubs(res.data.tenants);
+        }
+      } catch (error) {
+        console.log("Error fetching tenants:", error);
+      }
+    }
+
+    fetchTenants();
+  }, []);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -122,12 +80,18 @@ export default function TennantsList() {
   };
 
   const filteredClubs = clubs.filter((club) => {
+    const name = club.clubName?.toLowerCase() || "";
+    const subdomain = club.subDomain?.toLowerCase() || "";
+
     const matchesSearch =
-      club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      club.subdomain.toLowerCase().includes(searchTerm.toLowerCase());
+      name.includes(searchTerm.toLowerCase()) ||
+      subdomain.includes(searchTerm.toLowerCase());
+
     const matchesStatus =
       filterStatus === "ALL" || club.status === filterStatus;
+
     const matchesPlan = filterPlan === "ALL" || club.plan === filterPlan;
+
     return matchesSearch && matchesStatus && matchesPlan;
   });
 
@@ -324,7 +288,7 @@ export default function TennantsList() {
                       <div className="flex items-center gap-1">
                         <TrendingUp className="w-4 h-4 text-green-500" />
                         <p className="text-gray-900 font-semibold">
-                          ₹{club.metadata.revenue.toLocaleString()}
+                          ₹{(club.metadata?.revenue ?? 0).toLocaleString()}
                         </p>
                       </div>
                     </td>

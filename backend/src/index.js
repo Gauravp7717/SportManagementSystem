@@ -28,9 +28,11 @@ app.get("/healthcheck", (req, res) => res.send("ok"));
 
 //routes import
 import userRouter from "./routes/user.routes.js";
+import adminRouter from "./routes/superAdmin.route.js";
 
 //routes handling
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/admin", adminRouter);
 
 // Server Start
 const port = process.env.PORT || 3000;
