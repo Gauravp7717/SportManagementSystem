@@ -6,6 +6,10 @@ import Applayout from "./applayout/Applayout";
 import Dashboard from "./pages/SuperAdmin/Dashboard";
 import ClubDashboard from "./pages/clubadmin/ClubDashboard"; // Create this page for club admin
 import LoginPage from "./pages/Login";
+import TennantsList from "./pages/SuperAdmin/TennantsList";
+import UsersList from "./pages/SuperAdmin/UsersList";
+import AddUser from "./pages/SuperAdmin/AddUser";
+import AddTennants from "./pages/SuperAdmin/AddTennants";
 
 export default function Router() {
   return (
@@ -23,7 +27,10 @@ export default function Router() {
         }
       >
         <Route index element={<Dashboard />} />
-        {/* Add other superadmin routes here */}
+        <Route path="tennantslist" element={<TennantsList />} />
+        <Route path="userslist" element={<UsersList />} />
+        <Route path="adduser" element={<AddUser />} />
+        <Route path="addtennants" element={<AddTennants />} />
       </Route>
 
       {/* ClubAdmin Protected + Layout */}

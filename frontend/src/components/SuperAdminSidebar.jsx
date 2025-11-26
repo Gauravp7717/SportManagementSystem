@@ -8,6 +8,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { Link } from "react-router-dom"; // ✅ IMPORTANT FIX
 
 const SuperAdminSidebar = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -21,62 +22,70 @@ const SuperAdminSidebar = () => {
     {
       name: "Dashboard",
       icon: LayoutDashboard,
-      path: "/dashboard",
+      path: "/app", // SUPER ADMIN dashboard root
     },
     {
       name: "Users",
       icon: Users,
-      dropdown: [{ name: "User List", path: "/users/list" }],
+      dropdown: [
+        { name: "User List", path: "/app/userslist" }, // ROUTES MUST BE UNDER /app
+      ],
     },
     {
       name: "Tenants",
       icon: Building2,
-      path: "/tenants",
+      path: "/app/tennantslist",
     },
   ];
 
   const SidebarContent = () => (
     <div className="h-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
-      {/* Header */}
-      <div className="p-6 border-b border-slate-700/50">
-        <div className="flex items-center space-x-3">
-          <div>
-            {/* <h1 className="text-lg font-semibold text-white">MxS Finance</h1> */}
-            <p className="text-xs text-emerald-400 font-medium">Super Admin</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Menu Items */}
+      {/* Sidebar Body */}
       <nav className="flex-1 p-4">
         {menuItems.map((item) => (
           <div key={item.name} className="mb-1">
-            <button
-              onClick={() => item.dropdown && toggleDropdown(item.name)}
-              className="w-full flex items-center justify-between px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all duration-200 group"
+            {/* Top-Level Menu Button */}
+            <div
+              className="w-full flex items-center justify-between px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all duration-200 group cursor-pointer"
+              onClick={() => (item.dropdown ? toggleDropdown(item.name) : null)}
             >
               <div className="flex items-center gap-3">
                 <item.icon className="w-5 h-5 group-hover:text-emerald-400 transition-colors" />
-                <span className="font-medium text-sm">{item.name}</span>
+
+                {/* NORMAL LINK (no dropdown) */}
+                {!item.dropdown && (
+                  <Link to={item.path} className="font-medium text-sm">
+                    {item.name}
+                  </Link>
+                )}
+
+                {/* DROPDOWN TITLE (NO NAVIGATION) */}
+                {item.dropdown && (
+                  <span className="font-medium text-sm cursor-pointer">
+                    {item.name}
+                  </span>
+                )}
               </div>
+
               {item.dropdown &&
                 (openDropdown === item.name ? (
                   <ChevronDown className="w-4 h-4 text-slate-400" />
                 ) : (
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 ))}
-            </button>
+            </div>
 
             {/* Dropdown Items */}
             {item.dropdown && openDropdown === item.name && (
               <div className="ml-8 mt-1 space-y-1 animate-slideDown">
                 {item.dropdown.map((subItem) => (
-                  <button
+                  <Link
                     key={subItem.name}
-                    className="w-full text-left px-4 py-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-800/30 rounded-lg transition-all duration-200 text-sm"
+                    to={subItem.path}
+                    className="block w-full px-4 py-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-800/30 rounded-lg transition-all duration-200 text-sm"
                   >
                     {subItem.name}
-                  </button>
+                  </Link>
                 ))}
               </div>
             )}
@@ -132,6 +141,7 @@ const SuperAdminSidebar = () => {
         <SidebarContent />
       </aside>
 
+      {/* Animation Style */}
       <style>
         {`
           @keyframes slideDown {

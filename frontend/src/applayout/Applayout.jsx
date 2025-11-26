@@ -9,53 +9,56 @@ const AppLayout = () => {
   const { user } = useAuth();
   const location = useLocation();
 
+  // If not logged in → go to login page
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   let SidebarComponent = null;
-  let redirectPath = null;
 
-  if (user.role === "superadmin") {
+  // Correct backend roles:
+  // SUPER_ADMIN & CLUB_ADMIN
+  const role = user.role;
+
+  if (role === "SUPER_ADMIN") {
     SidebarComponent = SuperAdminSidebar;
-    redirectPath = "/app";
-  } else if (user.role === "clubadmin") {
+  } else if (role === "CLUB_ADMIN") {
     SidebarComponent = ClubAdminSidebar;
-    redirectPath = "/club";
   } else {
-    redirectPath = "/";
+    return <Navigate to="/" replace />;
   }
 
-  if (!["superadmin", "clubadmin"].includes(user.role)) {
-    return <Navigate to={redirectPath} replace />;
-  }
+  // Auto-correct wrong route access
+  const path = location.pathname;
 
-  const currentPath = location.pathname;
-  if (user.role === "superadmin" && !currentPath.startsWith("/app")) {
+  if (role === "SUPER_ADMIN" && !path.startsWith("/app")) {
     return <Navigate to="/app" replace />;
   }
-  if (user.role === "clubadmin" && !currentPath.startsWith("/club")) {
+
+  if (role === "CLUB_ADMIN" && !path.startsWith("/club")) {
     return <Navigate to="/club" replace />;
   }
 
   return (
     <div className="w-full h-screen overflow-hidden bg-gray-100">
-      {/* Fixed Header */}
+      {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-50">
         <Header />
       </div>
-      {/* Fixed Sidebar */}
-      <div className="fixed top-[64px] left-0 w-64 h-[calc(100vh-64px)] bg-white z-40 overflow-y-auto overflow-x-hidden sidebar-hidden-scroll ">
+
+      {/* Sidebar */}
+      <div className="fixed top-[64px] left-0 w-64 h-[calc(100vh-64px)] bg-white z-40 overflow-y-auto sidebar-hidden-scroll">
         <SidebarComponent />
       </div>
-      {/* Scrollable Content Area */}
+
+      {/* Page Content */}
       <main
         className="
           ml-60 
           mt-[64px]
           h-[calc(100vh-64px)]
           overflow-y-auto
-          p-6   
+          p-6
           bg-white
         "
       >
