@@ -6,3 +6,5 @@ const API = axios.create({
 
 export const createTenant = (data) => API.post("/add-tennants", data);
 export const getAllTenants = () => API.get("/all-tennants");
+export const createClubAdmin = (data) => API.post("/create-club-admin", data);
+export const getAllClubAdmins = () => API.get("/all-admins");

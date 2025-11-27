@@ -244,7 +244,7 @@ export default function TennantsList() {
                         </div>
                         <div>
                           <p className="font-semibold text-gray-900">
-                            {club.name}
+                            {club.clubName}
                           </p>
                           <p className="text-sm text-gray-500">
                             ID: {club._id}
@@ -256,7 +256,7 @@ export default function TennantsList() {
                       <div className="flex items-center gap-2 text-sm">
                         <Globe className="w-4 h-4 text-gray-400" />
                         <span className="text-gray-700 font-medium">
-                          {club.subdomain}
+                          {club.subDomain}
                         </span>
                         <span className="text-gray-400">.mxs.com</span>
                       </div>

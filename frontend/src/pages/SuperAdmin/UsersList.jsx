@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getAllClubAdmins } from "../../api/tennantsapi";
+
 import {
   Search,
   Filter,
@@ -9,112 +11,40 @@ import {
   Plus,
   User,
   Shield,
-  Building2,
-  Mail,
   Calendar,
   UserCog,
 } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
 
 export default function UsersList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("ALL");
-  const [filterClub, setFilterClub] = useState("ALL");
   const [showActionMenu, setShowActionMenu] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
 
-  // Sample users data
-  const users = [
-    {
-      _id: "1",
-      username: "john.doe",
-      email: "john.doe@elitefitness.com",
-      role: "ADMIN",
-      clubId: "elitefitness",
-      clubName: "Elite Fitness Club",
-      isActive: true,
-      createdAt: "2024-01-15T10:30:00Z",
-      lastLogin: "2024-11-26T09:15:00Z",
-    },
-    {
-      _id: "2",
-      username: "sarah.manager",
-      email: "sarah@downtownsports.com",
-      role: "MANAGER",
-      clubId: "downtownsports",
-      clubName: "Downtown Sports Center",
-      isActive: true,
-      createdAt: "2024-02-10T09:15:00Z",
-      lastLogin: "2024-11-25T14:22:00Z",
-    },
-    {
-      _id: "3",
-      username: "mike.trainer",
-      email: "mike@yogawellness.com",
-      role: "STAFF",
-      clubId: "yogawellness",
-      clubName: "Yoga Wellness Studio",
-      isActive: true,
-      createdAt: "2024-03-22T14:20:00Z",
-      lastLogin: "2024-11-24T11:30:00Z",
-    },
-    {
-      _id: "4",
-      username: "emma.wilson",
-      email: "emma@elitefitness.com",
-      role: "STAFF",
-      clubId: "elitefitness",
-      clubName: "Elite Fitness Club",
-      isActive: true,
-      createdAt: "2024-04-05T08:45:00Z",
-      lastLogin: "2024-11-26T08:00:00Z",
-    },
-    {
-      _id: "5",
-      username: "admin.power",
-      email: "admin@powergym.com",
-      role: "ADMIN",
-      clubId: "powergym",
-      clubName: "Power Gym",
-      isActive: false,
-      createdAt: "2024-04-05T08:45:00Z",
-      lastLogin: "2024-10-12T10:15:00Z",
-    },
-    {
-      _id: "6",
-      username: "coach.alex",
-      email: "alex@crossfitarena.com",
-      role: "TRAINER",
-      clubId: "crossfitarena",
-      clubName: "CrossFit Arena",
-      isActive: true,
-      createdAt: "2024-05-18T11:00:00Z",
-      lastLogin: "2024-11-23T16:45:00Z",
-    },
-    {
-      _id: "7",
-      username: "lisa.receptionist",
-      email: "lisa@pilatesplus.com",
-      role: "STAFF",
-      clubId: "pilatesplus",
-      clubName: "Pilates Plus",
-      isActive: true,
-      createdAt: "2024-06-12T15:30:00Z",
-      lastLogin: "2024-11-26T07:20:00Z",
-    },
-    {
-      _id: "8",
-      username: "james.coach",
-      email: "james@downtownsports.com",
-      role: "TRAINER",
-      clubId: "downtownsports",
-      clubName: "Downtown Sports Center",
-      isActive: true,
-      createdAt: "2024-07-20T10:00:00Z",
-      lastLogin: "2024-11-25T18:30:00Z",
-    },
-  ];
+  // Fetch users from backend
+  useEffect(() => {
+    async function loadAdmins() {
+      try {
+        const res = await getAllClubAdmins();
 
+        if (res.data.clubAdmins) {
+          setUsers(res.data.clubAdmins);
+        }
+      } catch (err) {
+        console.log("Error fetching admins:", err);
+      }
+
+      setLoading(false);
+    }
+    loadAdmins();
+  }, []);
+
+  // Format dates
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -123,25 +53,12 @@ export default function UsersList() {
     });
   };
 
-  const formatDateTime = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
+  // Role color badges
   const getRoleColor = (role) => {
     switch (role) {
+      case "CLUB_ADMIN":
       case "ADMIN":
         return "bg-red-100 text-red-800";
-      case "MANAGER":
-        return "bg-purple-100 text-purple-800";
-      case "TRAINER":
-        return "bg-blue-100 text-blue-800";
-      case "STAFF":
-        return "bg-green-100 text-green-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -149,36 +66,26 @@ export default function UsersList() {
 
   const getRoleIcon = (role) => {
     switch (role) {
+      case "CLUB_ADMIN":
       case "ADMIN":
         return Shield;
-      case "MANAGER":
-        return UserCog;
-      case "TRAINER":
-        return User;
-      case "STAFF":
-        return User;
       default:
         return User;
     }
   };
 
-  const uniqueClubs = [...new Set(users.map((u) => u.clubId))];
-
+  // Filter users
   const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.clubName.toLowerCase().includes(searchTerm.toLowerCase());
+    const username = user.username?.toLowerCase() || "";
+    const matchesSearch = username.includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === "ALL" || user.role === filterRole;
-    const matchesClub = filterClub === "ALL" || user.clubId === filterClub;
-    return matchesSearch && matchesRole && matchesClub;
+
+    return matchesSearch && matchesRole;
   });
 
+  // Stats
   const roleStats = {
-    ADMIN: users.filter((u) => u.role === "ADMIN").length,
-    MANAGER: users.filter((u) => u.role === "MANAGER").length,
-    TRAINER: users.filter((u) => u.role === "TRAINER").length,
-    STAFF: users.filter((u) => u.role === "STAFF").length,
+    CLUB_ADMIN: users.filter((u) => u.role === "CLUB_ADMIN").length,
   };
 
   const handeladd = (path) => {
@@ -195,14 +102,11 @@ export default function UsersList() {
               <h1 className="text-3xl font-bold text-gray-900">
                 Users Management
               </h1>
-              <p className="text-gray-600 mt-2">
-                Manage all users across different clubs
-              </p>
+              <p className="text-gray-600 mt-2">Manage all club admins</p>
             </div>
+
             <button
-              onClick={() => {
-                handeladd("/app/adduser");
-              }}
+              onClick={() => handeladd("/app/adduser")}
               className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
             >
               <Plus className="w-5 h-5" />
@@ -219,63 +123,24 @@ export default function UsersList() {
                 <Shield className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <p className="text-gray-600 text-sm">Admins</p>
+                <p className="text-gray-600 text-sm">Club Admins</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {roleStats.ADMIN}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <UserCog className="w-6 h-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-gray-600 text-sm">Managers</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {roleStats.MANAGER}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <User className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-gray-600 text-sm">Trainers</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {roleStats.TRAINER}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <User className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-gray-600 text-sm">Staff</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {roleStats.STAFF}
+                  {roleStats.CLUB_ADMIN}
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Filters and Search */}
+        {/* Search & Role Filter */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search users by name, email, or club..."
+                placeholder="Search users by username..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -288,30 +153,10 @@ export default function UsersList() {
               <select
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 appearance-none bg-white"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
               >
                 <option value="ALL">All Roles</option>
-                <option value="ADMIN">Admin</option>
-                <option value="MANAGER">Manager</option>
-                <option value="TRAINER">Trainer</option>
-                <option value="STAFF">Staff</option>
-              </select>
-            </div>
-
-            {/* Club Filter */}
-            <div className="relative">
-              <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <select
-                value={filterClub}
-                onChange={(e) => setFilterClub(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 appearance-none bg-white"
-              >
-                <option value="ALL">All Clubs</option>
-                {uniqueClubs.map((clubId) => (
-                  <option key={clubId} value={clubId}>
-                    {users.find((u) => u.clubId === clubId)?.clubName}
-                  </option>
-                ))}
+                <option value="CLUB_ADMIN">Club Admin</option>
               </select>
             </div>
           </div>
@@ -323,32 +168,24 @@ export default function UsersList() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
                     User
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
                     Email
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
                     Role
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Club
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Last Login
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
                     Created
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
                     Actions
                   </th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-gray-200">
                 {filteredUsers.map((user) => {
                   const RoleIcon = getRoleIcon(user.role);
@@ -357,6 +194,7 @@ export default function UsersList() {
                       key={user._id}
                       className="hover:bg-gray-50 transition-colors"
                     >
+                      {/* Username */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="bg-teal-100 p-2 rounded-full">
@@ -372,59 +210,32 @@ export default function UsersList() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <Mail className="w-4 h-4 text-gray-400" />
-                          {user.email}
-                        </div>
+
+                      {/* Email (backend does not provide an email, so username is used) */}
+                      <td className="px-6 py-4 text-gray-700">
+                        {user.username}
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${getRoleColor(
-                              user.role
-                            )}`}
-                          >
-                            <RoleIcon className="w-3 h-3" />
-                            {user.role}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Building2 className="w-4 h-4 text-gray-400" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {user.clubName}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {user.clubId}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
+
+                      {/* Role */}
                       <td className="px-6 py-4">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            user.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${getRoleColor(
+                            user.role
+                          )}`}
                         >
-                          {user.isActive ? "Active" : "Inactive"}
+                          <RoleIcon className="w-3 h-3" /> {user.role}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-600">
-                          {formatDateTime(user.lastLogin)}
-                        </div>
-                      </td>
+
+                      {/* Created */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Calendar className="w-4 h-4" />
                           {formatDate(user.createdAt)}
                         </div>
                       </td>
+
+                      {/* Actions */}
                       <td className="px-6 py-4">
                         <div className="relative">
                           <button
@@ -463,7 +274,6 @@ export default function UsersList() {
             </table>
           </div>
 
-          {/* Empty State */}
           {filteredUsers.length === 0 && (
             <div className="text-center py-12">
               <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -474,31 +284,6 @@ export default function UsersList() {
             </div>
           )}
         </div>
-
-        {/* Pagination */}
-        {filteredUsers.length > 0 && (
-          <div className="mt-6 flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              Showing{" "}
-              <span className="font-semibold">{filteredUsers.length}</span> of{" "}
-              <span className="font-semibold">{users.length}</span> users
-            </p>
-            <div className="flex gap-2">
-              <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                Previous
-              </button>
-              <button className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors">
-                1
-              </button>
-              <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                2
-              </button>
-              <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                Next
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
