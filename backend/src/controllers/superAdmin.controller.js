@@ -3,7 +3,6 @@ import User from "../models/User.model.js";
 
 const addTennant = async (req, res) => {
   const { clubName, subDomain, plan, status, metadata } = req.body;
-  // TODO: input validation
 
   try {
     const tenant = await Tenant.create({
@@ -16,7 +15,11 @@ const addTennant = async (req, res) => {
 
     return res
       .status(201)
-      .json({ success: true, message: "tenant has been added successfully" });
+      .json({
+        success: true,
+        message: "tenant has been added successfully",
+        data: tenant,
+      });
   } catch (error) {
     if (error instanceof Error) {
       return res.status(500).json({ success: false, message: error.message });
@@ -26,7 +29,10 @@ const addTennant = async (req, res) => {
 
 const getAllTennants = async (req, res) => {
   try {
-    const tenants = await Tenant.find({});
+    const tenants = await Tenant.find({}).populate(
+      "clubAdmin",
+      "username email fullname"
+    );
     return res.json({ success: true, tenants });
   } catch (error) {
     if (error instanceof Error) {
@@ -37,8 +43,9 @@ const getAllTennants = async (req, res) => {
 
 const createClubAdmin = async (req, res) => {
   try {
-    const { username, email, role, clubName, password } = req.body;
+    const { username, email, fullname, role, clubName, password } = req.body;
     const club = await Tenant.findOne({ clubName });
+
     if (!club) {
       return res.json({ success: false, message: "invalid club" });
     }
@@ -46,7 +53,8 @@ const createClubAdmin = async (req, res) => {
     const clubAdmin = await User.create({
       username,
       email,
-      role,
+      fullname,
+      role: role || "CLUB_ADMIN",
       password,
     });
 
@@ -59,9 +67,13 @@ const createClubAdmin = async (req, res) => {
       }
     );
 
+    // Return populated admin
+    const adminWithClub = await User.findById(clubAdmin._id).populate("club");
+
     return res.json({
       success: true,
-      message: "club admin created successfully ",
+      message: "club admin created successfully",
+      data: adminWithClub,
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -72,8 +84,20 @@ const createClubAdmin = async (req, res) => {
 
 const getAllClubAdmins = async (req, res) => {
   try {
-    const clubAdmins = await User.find({});
-    return res.json({ clubAdmins });
+    const clubAdmins = await User.find({ role: "CLUB_ADMIN" })
+      .populate({
+        path: "club",
+        select: "clubName subDomain plan status",
+        match: { clubAdmin: { $exists: true, $ne: null } },
+      })
+      .select("-password -refreshToken")
+      .lean();
+
+    return res.json({
+      success: true,
+      clubAdmins,
+      count: clubAdmins.length,
+    });
   } catch (error) {
     if (error instanceof Error) {
       return res.status(500).json({ success: false, message: error.message });

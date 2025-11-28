@@ -7,13 +7,28 @@ export function AuthProvider({ children }) {
   const API_BASE =
     import.meta?.env?.VITE_API_BASE_URL || "http://localhost:3000";
 
+  // Safe user state initialization
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = localStorage.getItem("user");
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (error) {
+      console.warn("Invalid user data in localStorage, clearing:", error);
+      localStorage.removeItem("user");
+      return null;
+    }
   });
 
+  // Safe isAuthenticated state initialization
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem("isAuthenticated") === "true";
+    try {
+      const savedAuth = localStorage.getItem("isAuthenticated");
+      return savedAuth === "true";
+    } catch (error) {
+      console.warn("Invalid auth data in localStorage, clearing:", error);
+      localStorage.removeItem("isAuthenticated");
+      return false;
+    }
   });
 
   // Fetch current logged-in user on page refresh
@@ -27,9 +42,12 @@ export function AuthProvider({ children }) {
 
         if (res.ok) {
           const data = await res.json();
-          setUser(data.data);
+          const userData = data.data;
+
+          // Safe storage update
+          setUser(userData);
           setIsAuthenticated(true);
-          localStorage.setItem("user", JSON.stringify(data.data));
+          localStorage.setItem("user", JSON.stringify(userData));
           localStorage.setItem("isAuthenticated", "true");
         } else {
           setUser(null);
@@ -38,12 +56,13 @@ export function AuthProvider({ children }) {
           localStorage.removeItem("isAuthenticated");
         }
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching current user:", error);
+        // Don't clear storage on network errors - let login handle it
       }
     };
 
     fetchCurrentUser();
-  }, []);
+  }, [API_BASE]);
 
   // 🔐 LOGIN
   const login = async (username, password) => {
@@ -58,11 +77,12 @@ export function AuthProvider({ children }) {
       const data = await res.json();
 
       if (!res.ok) {
-        return { success: false, message: data.message };
+        return { success: false, message: data.message || "Login failed" };
       }
 
       const loggedInUser = data.data.loggedInUser;
 
+      // Safe state and storage update
       setUser(loggedInUser);
       setIsAuthenticated(true);
       localStorage.setItem("user", JSON.stringify(loggedInUser));
@@ -70,8 +90,8 @@ export function AuthProvider({ children }) {
 
       return { success: true, user: loggedInUser };
     } catch (err) {
-      console.error(err);
-      return { success: false, message: "Server error" };
+      console.error("Login error:", err);
+      return { success: false, message: "Network error during login" };
     }
   };
 
@@ -88,11 +108,15 @@ export function AuthProvider({ children }) {
       const data = await res.json();
 
       if (!res.ok) {
-        return { success: false, message: data.message };
+        return {
+          success: false,
+          message: data.message || "Registration failed",
+        };
       }
 
       const newUser = data.data.user;
 
+      // Safe state and storage update
       setUser(newUser);
       setIsAuthenticated(true);
       localStorage.setItem("user", JSON.stringify(newUser));
@@ -100,33 +124,45 @@ export function AuthProvider({ children }) {
 
       return { success: true, user: newUser };
     } catch (error) {
-      console.error(error);
-      return { success: false, message: "Registration failed" };
+      console.error("Registration error:", error);
+      return { success: false, message: "Network error during registration" };
     }
   };
 
   // 🚪 LOGOUT
   const logout = async () => {
-    await fetch(`${API_BASE}/api/v1/users/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
+    try {
+      await fetch(`${API_BASE}/api/v1/users/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout API error:", error);
+      // Continue with cleanup even if API fails
+    }
 
+    // Safe cleanup
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem("user");
     localStorage.removeItem("isAuthenticated");
   };
 
-  return (
-    <AuthContext.Provider
-      value={{ user, isAuthenticated, login, logout, registerUser }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    isAuthenticated,
+    login,
+    logout,
+    registerUser,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

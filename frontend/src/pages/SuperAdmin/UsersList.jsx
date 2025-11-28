@@ -13,6 +13,7 @@ import {
   Shield,
   Calendar,
   UserCog,
+  Building2, // ✅ Added for club icon
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
@@ -77,7 +78,10 @@ export default function UsersList() {
   // Filter users
   const filteredUsers = users.filter((user) => {
     const username = user.username?.toLowerCase() || "";
-    const matchesSearch = username.includes(searchTerm.toLowerCase());
+    const clubName = user.club?.clubName?.toLowerCase() || "";
+    const matchesSearch =
+      username.includes(searchTerm.toLowerCase()) ||
+      clubName.includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === "ALL" || user.role === filterRole;
 
     return matchesSearch && matchesRole;
@@ -140,7 +144,7 @@ export default function UsersList() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search users by username..."
+                placeholder="Search users by username or club name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -173,6 +177,10 @@ export default function UsersList() {
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
                     Email
+                  </th>
+                  {/* ✅ NEW CLUB COLUMN */}
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Club
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
                     Role
@@ -211,9 +219,32 @@ export default function UsersList() {
                         </div>
                       </td>
 
-                      {/* Email (backend does not provide an email, so username is used) */}
+                      {/* Email */}
                       <td className="px-6 py-4 text-gray-700">
-                        {user.username}
+                        {user.email || "No email"}
+                      </td>
+
+                      {/* ✅ CLUB NAME COLUMN */}
+                      <td className="px-6 py-4">
+                        {user.club ? (
+                          <div className="flex items-center gap-2">
+                            <div className="bg-blue-100 p-2 rounded-lg">
+                              <Building2 className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {user.club.clubName}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {user.club.subDomain}
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">
+                            No club assigned
+                          </span>
+                        )}
                       </td>
 
                       {/* Role */}

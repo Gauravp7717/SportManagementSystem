@@ -12,6 +12,10 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
     },
+    fullname: {
+      // ✅ Added missing fullname field
+      type: String,
+    },
     password: {
       type: String,
       required: true,
@@ -33,7 +37,6 @@ const userSchema = new mongoose.Schema(
 // 🔐 Pre-save hook to hash password
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
-
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
@@ -57,6 +60,7 @@ userSchema.methods.generateAccessToken = function () {
     }
   );
 };
+
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {
@@ -69,6 +73,16 @@ userSchema.methods.generateRefreshToken = function () {
   );
 };
 
-const User = mongoose.model("User", userSchema);
+// ✅ Virtual for reverse population (User -> Tenant)
+userSchema.virtual("club", {
+  ref: "Tenant",
+  localField: "_id",
+  foreignField: "clubAdmin",
+  justOne: true,
+});
 
+userSchema.set("toJSON", { virtuals: true });
+userSchema.set("toObject", { virtuals: true });
+
+const User = mongoose.model("User", userSchema);
 export default User;
