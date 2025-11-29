@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -7,6 +8,15 @@ import {
   ChevronRight,
   Menu,
   X,
+  BathIcon,
+  BatteryCharging,
+  PlusSquare,
+  BadgeIndianRupee,
+  CalendarCheck,
+  IndianRupeeIcon,
+  Clock1,
+  Clock3,
+  UserCheck2,
 } from "lucide-react";
 
 const ClubAdminSidebar = () => {
@@ -24,15 +34,38 @@ const ClubAdminSidebar = () => {
       path: "/dashboard",
     },
     {
-      name: "Users",
+      name: "Students",
       icon: Users,
-      dropdown: [{ name: "User List", path: "/users/list" }],
+      path : "/students",
     },
     {
-      name: "Tenants",
-      icon: Building2,
-      path: "/tenants",
+      name: "Coaches",
+      icon: UserCheck2,
+      path: "/coaches",
     },
+    {
+      name :"Batches",
+      icon : Clock3,
+      path : "/batches"
+    },
+    {
+      name : "Add Sport",
+      icon : PlusSquare,
+      path : "/addsport"
+    },
+    {
+      name: "Fees",
+      icon: IndianRupeeIcon,
+      path: "/addfees"
+    },
+    {
+      name : "Attendance",
+      icon : CalendarCheck,
+      path : "/attendance"
+    }
+
+
+
   ];
 
   const SidebarContent = () => (
@@ -51,10 +84,17 @@ const ClubAdminSidebar = () => {
       <nav className="flex-1 p-4">
         {menuItems.map((item) => (
           <div key={item.name} className="mb-1">
-            <button
-              onClick={() => item.dropdown && toggleDropdown(item.name)}
-              className="w-full flex items-center justify-between px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all duration-200 group"
-            >
+            <NavLink
+               to={`/club${item.path}`}
+                className={({ isActive }) =>
+                `w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group ${
+                   isActive
+                ? "bg-slate-800 text-white"
+               : "text-slate-300 hover:text-white hover:bg-slate-800/50"
+                               }`
+                           }
+                         >
+
               <div className="flex items-center gap-3">
                 <item.icon className="w-5 h-5 group-hover:text-emerald-400 transition-colors" />
                 <span className="font-medium text-sm">{item.name}</span>
@@ -65,7 +105,7 @@ const ClubAdminSidebar = () => {
                 ) : (
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 ))}
-            </button>
+            </NavLink>
 
             {/* Dropdown Items */}
             {item.dropdown && openDropdown === item.name && (
