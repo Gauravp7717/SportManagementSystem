@@ -13,13 +13,11 @@ const addTennant = async (req, res) => {
       metadata,
     });
 
-    return res
-      .status(201)
-      .json({
-        success: true,
-        message: "tenant has been added successfully",
-        data: tenant,
-      });
+    return res.status(201).json({
+      success: true,
+      message: "tenant has been added successfully",
+      data: tenant,
+    });
   } catch (error) {
     if (error instanceof Error) {
       return res.status(500).json({ success: false, message: error.message });
