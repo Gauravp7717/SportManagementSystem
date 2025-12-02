@@ -16,6 +16,7 @@ import TennantsList from "./pages/SuperAdmin/TennantsList";
 import UsersList from "./pages/SuperAdmin/UsersList";
 import AddUser from "./pages/SuperAdmin/AddUser";
 import AddTennants from "./pages/SuperAdmin/AddTennants";
+import SportsList from "./pages/clubadmin/SportsList";
 // Create this page for club admin
 
 export default function Router() {
@@ -58,6 +59,7 @@ export default function Router() {
         <Route path="addsport" element={<AddSports />} />
         <Route path="addfees" element={<FeeSection />} />
         <Route path="attendance" element={<Attendance />} />
+        <Route path="sportslist" element={<SportsList />} />
       </Route>
     </Routes>
   );

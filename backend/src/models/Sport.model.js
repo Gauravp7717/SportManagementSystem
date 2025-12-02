@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const sportSchema = new mongoose.Schema(
   {
@@ -8,7 +8,7 @@ const sportSchema = new mongoose.Schema(
       required: true,
     },
 
-    name: {
+    sportName: {
       type: String,
       required: true,
       unique: true,
@@ -18,12 +18,14 @@ const sportSchema = new mongoose.Schema(
       type: String,
     },
 
-    active: {
-      type: Boolean,
-      default: true,
+    status: {
+      type: String,
+      enum: ["ACTIVE", "INACTIVE"],
+      default: "ACTIVE",
     },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Sport", sportSchema);
+const Sport = mongoose.model("Sport", sportSchema);
+export default Sport;
