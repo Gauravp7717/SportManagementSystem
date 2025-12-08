@@ -203,7 +203,6 @@ const Sports = () => {
             </button>
           </div>
         </div>
-        >
       </div>
     </div>
   );
