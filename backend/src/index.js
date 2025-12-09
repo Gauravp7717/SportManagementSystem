@@ -27,11 +27,16 @@ app.get("/healthcheck", (req, res) => res.send("ok"));
 import userRouter from "./routes/user.routes.js";
 import adminRouter from "./routes/superAdmin.route.js";
 import clubAdminRouter from "./routes/clubAdmin.route.js";
+import  coachRouter from   "./routes/coach.routes.js";
+
+
+
 
 //routes handling
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/club-admin", clubAdminRouter);
+app.use("/api/v1/coach", coachRouter);
 
 // Server Start
 const port = process.env.PORT || 3000;

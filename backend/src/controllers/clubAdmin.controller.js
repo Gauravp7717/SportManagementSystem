@@ -9,20 +9,17 @@ import Sport from "../models/Sport.model.js";
 const escapeRegExp = (string = "") =>
   string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// CREATE SPORT - tenant-scoped & secure
 export const createSport = asyncHandler(async (req, res) => {
-  // Basic auth check (verifyJWT middleware should populate req.user)
   if (!req.user || !req.user._id) {
     throw new apiError(401, "Unauthorized");
   }
 
-  const { sportName, description, status } = req.body;
+  const { sportName, description } = req.body;
 
   // if (!sportName || typeof sportName !== "string" || !sportName.trim()) {
   //   throw new apiError(400, "sportName is required");
   // }
 
-  // Find the tenant for which this user is the clubAdmin
   const tenant = await Tenant.findOne({ clubAdmin: req.user._id }).select(
     "_id"
   );
@@ -50,7 +47,6 @@ export const createSport = asyncHandler(async (req, res) => {
     tenantId: tenant._id,
     sportName: nameTrimmed,
     description: description ?? "",
-    active: status === undefined ? true : Boolean(status),
   });
 
   return res

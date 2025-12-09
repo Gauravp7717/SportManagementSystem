@@ -22,12 +22,17 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["SUPER_ADMIN", "CLUB_ADMIN"],
+      enum: ["SUPER_ADMIN", "CLUB_ADMIN", "COACH"],
       default: "CLUB_ADMIN",
+    },
+    salary:{
+        type:Number,
+        required:false,
     },
     refreshToken: {
       type: String,
     },
+
   },
   {
     timestamps: true,
