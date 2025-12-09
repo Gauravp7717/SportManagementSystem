@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const studentSchema = new mongoose.Schema(
   {
@@ -11,6 +11,14 @@ const studentSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
+    },
+
+    email: {
+      type: String,
+      lowercase: true,
+    },
+    contact: {
+      type: String,
     },
 
     dob: {
@@ -30,11 +38,6 @@ const studentSchema = new mongoose.Schema(
       },
     ],
 
-    batchId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Batch",
-    },
-
     feeStatus: {
       type: String,
       enum: ["PAID", "UNPAID", "PENDING"],
@@ -44,4 +47,5 @@ const studentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Student", studentSchema);
+const Student = mongoose.model("Student", studentSchema);
+export default Student;

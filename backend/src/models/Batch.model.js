@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const batchSchema = new mongoose.Schema(
   {
@@ -7,8 +7,12 @@ const batchSchema = new mongoose.Schema(
       ref: "Tenant",
       required: true,
     },
+    batchStartTime: {
+      type: String,
+      required: true,
+    },
 
-    name: {
+    batchEndTime: {
       type: String,
       required: true,
     },
@@ -19,17 +23,27 @@ const batchSchema = new mongoose.Schema(
       required: true,
     },
 
-    schedule: {
-      type: String, // Example: "Mon-Wed-Fri 6PM–7PM"
-      required: true,
-    },
+    coaches: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
 
-    capacity: {
-      type: Number,
-      default: 20,
+    students: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Student",
+      },
+    ],
+
+    schedule: {
+      type: String,
+      required: true,
     },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Batch", batchSchema);
+const Batch = mongoose.model("Batch", batchSchema);
+export default Batch;

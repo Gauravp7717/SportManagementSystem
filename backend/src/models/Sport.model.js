@@ -18,6 +18,13 @@ const sportSchema = new mongoose.Schema(
       type: String,
     },
 
+    batches: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Batch",
+      },
+    ],
+
     status: {
       type: String,
       enum: ["ACTIVE", "INACTIVE"],

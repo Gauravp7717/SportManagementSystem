@@ -5,20 +5,24 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import Sport from "../models/Sport.model.js";
+import Batch from "../models/Batch.model.js";
+import Student from "../models/student.model.js";
 
 const escapeRegExp = (string = "") =>
   string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-export const createSport = asyncHandler(async (req, res) => {
+// CREATE SPORT - tenant-scoped & secure
+const createSport = asyncHandler(async (req, res) => {
+  // // Basic auth check (verifyJWT middleware should populate req.user)
   if (!req.user || !req.user._id) {
     throw new apiError(401, "Unauthorized");
   }
 
   const { sportName, description } = req.body;
 
-  // if (!sportName || typeof sportName !== "string" || !sportName.trim()) {
-  //   throw new apiError(400, "sportName is required");
-  // }
+  if (!sportName || typeof sportName !== "string" || !sportName.trim()) {
+    throw new apiError(400, "sportName is required");
+  }
 
   const tenant = await Tenant.findOne({ clubAdmin: req.user._id }).select(
     "_id"
@@ -54,7 +58,7 @@ export const createSport = asyncHandler(async (req, res) => {
     .json(new apiResponse(201, sport, "Sport created successfully"));
 });
 
-export const getSports = asyncHandler(async (req, res) => {
+const getSports = asyncHandler(async (req, res) => {
   if (!req.user || !req.user._id) {
     throw new apiError(401, "Unauthorized");
   }
@@ -77,7 +81,7 @@ export const getSports = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, sports, "Sports fetched successfully"));
 });
 
-export const deleteSport = asyncHandler(async (req, res) => {
+const deleteSport = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   if (!req.user || !req.user._id) {
@@ -109,3 +113,141 @@ export const deleteSport = asyncHandler(async (req, res) => {
     .status(200)
     .json(new apiResponse(200, {}, "Sport deleted successfully"));
 });
+
+const createBatch = asyncHandler(async (req, res) => {
+  const { batchStartTime, batchEndTime, sportId, coaches, students, schedule } =
+    req.body;
+
+  if (!batchStartTime || !batchEndTime || !sportId || !schedule) {
+    throw new apiError(404, "All required fields must be provided");
+  }
+
+  const sportExist = await Sport.findById(sportId);
+  if (!sportExist) {
+    throw new apiError(404, "Sport not found");
+  }
+
+  const batch = await Batch.create({
+    batchStartTime,
+    batchEndTime,
+    sportId,
+    coaches,
+    students,
+    schedule,
+  });
+
+  return res
+    .status(201)
+    .json(new apiResponse(201, batch, "Batch created successfully"));
+});
+
+const deleteBatch = asyncHandler(async (req, res) => {
+  const { batchId } = req.params;
+
+  if (!batchId) {
+    throw new apiError(400, "Batch id is required");
+  }
+
+  const deleted = await Batch.findByIdAndDelete(batchId);
+
+  if (!deleted) {
+    throw new apiError(404, "Batch not found");
+  }
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, deleted, "Batch deleted successfully"));
+});
+
+const assignCoaches = asyncHandler(async (req, res) => {
+  const { batchId } = req.params;
+  const { coaches } = req.body;
+
+  if (!coaches || !Array.isArray(coaches)) {
+    throw new apiError(400, "Coaches must be sent as an array");
+  }
+
+  const batch = await Batch.findById(batchId);
+
+  if (!batch) {
+    throw new apiError(404, "Batch not found");
+  }
+
+  batch.coaches = [...batch.coaches, ...coaches];
+  await batch.save();
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, batch, "Coaches assigned successfully"));
+});
+
+const assignStudents = asyncHandler(async (req, res) => {
+  const { batchId } = req.params;
+  const { students } = req.body;
+
+  if (!students || !Array.isArray(students)) {
+    throw new apiError(400, "Students must be sent as an array");
+  }
+
+  students.forEach((st) => {
+    if (!st.name || !st.contact) {
+      throw new apiError(400, "Each student must have name and contact");
+    }
+  });
+
+  const batch = await Batch.findById(batchId);
+
+  if (!batch) {
+    throw new apiError(404, "Batch not found");
+  }
+
+  batch.students = [...batch.students, ...students];
+  await batch.save();
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, batch, "Students assigned successfully"));
+});
+
+const createStudent = asyncHandler(async (req, res) => {
+  const {
+    tenantId,
+    name,
+    email,
+    contact,
+    dob,
+    joiningDate,
+    sports,
+    feeStatus,
+  } = req.body;
+
+  if (!tenantId || !name || !dob || !joiningDate || !email || !contact) {
+    throw new apiError(400, "tenantId, name, dob and joiningDate are required");
+  }
+
+  const student = await Student.create({
+    tenantId,
+    name,
+    email,
+    contact,
+    dob,
+    joiningDate,
+    sports,
+    feeStatus,
+  });
+
+  return res
+    .status(201)
+    .json(new apiResponse(201, student, "Student created successfully"));
+});
+
+export {
+  createBatch,
+  deleteBatch,
+  deleteSport,
+  getSports,
+  createSport,
+  assignCoaches,
+  assignStudents,
+  createStudent,
+};
