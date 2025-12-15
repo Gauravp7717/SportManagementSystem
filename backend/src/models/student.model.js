@@ -37,6 +37,11 @@ const studentSchema = new mongoose.Schema(
         ref: "Sport",
       },
     ],
+    batchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Batch",
+      required: true,
+    },
 
     feeStatus: {
       type: String,

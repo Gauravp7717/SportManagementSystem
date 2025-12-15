@@ -36,7 +36,7 @@ const ClubAdminSidebar = () => {
     {
       name: "Students",
       icon: Users,
-      path : "/students",
+      path: "/students",
     },
     {
       name: "Coaches",
@@ -44,28 +44,21 @@ const ClubAdminSidebar = () => {
       path: "/coaches",
     },
     {
-      name :"Batches",
-      icon : Clock3,
-      path : "/batches"
+      name: "Batches",
+      icon: Clock3,
+      path: "/batches",
     },
     {
-      name : "Add Sport",
-      icon : PlusSquare,
-      path : "/addsport"
+      name: "Add Sport",
+      icon: PlusSquare,
+      path: "/addsport",
     },
+
     {
-      name: "Fees",
-      icon: IndianRupeeIcon,
-      path: "/addfees"
+      name: "Attendance",
+      icon: CalendarCheck,
+      path: "/attendance",
     },
-    {
-      name : "Attendance",
-      icon : CalendarCheck,
-      path : "/attendance"
-    }
-
-
-
   ];
 
   const SidebarContent = () => (
@@ -85,16 +78,15 @@ const ClubAdminSidebar = () => {
         {menuItems.map((item) => (
           <div key={item.name} className="mb-1">
             <NavLink
-               to={`/club${item.path}`}
-                className={({ isActive }) =>
+              to={`/club${item.path}`}
+              className={({ isActive }) =>
                 `w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group ${
-                   isActive
-                ? "bg-slate-800 text-white"
-               : "text-slate-300 hover:text-white hover:bg-slate-800/50"
-                               }`
-                           }
-                         >
-
+                  isActive
+                    ? "bg-slate-800 text-white"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800/50"
+                }`
+              }
+            >
               <div className="flex items-center gap-3">
                 <item.icon className="w-5 h-5 group-hover:text-emerald-400 transition-colors" />
                 <span className="font-medium text-sm">{item.name}</span>

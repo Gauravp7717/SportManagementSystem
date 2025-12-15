@@ -12,8 +12,7 @@ import {
   User,
   Shield,
   Calendar,
-  UserCog,
-  Building2, // ✅ Added for club icon
+  Building2,
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
@@ -32,20 +31,17 @@ export default function UsersList() {
     async function loadAdmins() {
       try {
         const res = await getAllClubAdmins();
-
         if (res.data.clubAdmins) {
           setUsers(res.data.clubAdmins);
         }
       } catch (err) {
         console.log("Error fetching admins:", err);
       }
-
       setLoading(false);
     }
     loadAdmins();
   }, []);
 
-  // Format dates
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -54,7 +50,6 @@ export default function UsersList() {
     });
   };
 
-  // Role color badges
   const getRoleColor = (role) => {
     switch (role) {
       case "CLUB_ADMIN":
@@ -75,7 +70,6 @@ export default function UsersList() {
     }
   };
 
-  // Filter users
   const filteredUsers = users.filter((user) => {
     const username = user.username?.toLowerCase() || "";
     const clubName = user.club?.clubName?.toLowerCase() || "";
@@ -87,7 +81,6 @@ export default function UsersList() {
     return matchesSearch && matchesRole;
   });
 
-  // Stats
   const roleStats = {
     CLUB_ADMIN: users.filter((u) => u.role === "CLUB_ADMIN").length,
   };
@@ -178,7 +171,6 @@ export default function UsersList() {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
                     Email
                   </th>
-                  {/* ✅ NEW CLUB COLUMN */}
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
                     Club
                   </th>
@@ -224,7 +216,7 @@ export default function UsersList() {
                         {user.email || "No email"}
                       </td>
 
-                      {/* ✅ CLUB NAME COLUMN */}
+                      {/* Club */}
                       <td className="px-6 py-4">
                         {user.club ? (
                           <div className="flex items-center gap-2">
@@ -305,7 +297,7 @@ export default function UsersList() {
             </table>
           </div>
 
-          {filteredUsers.length === 0 && (
+          {!loading && filteredUsers.length === 0 && (
             <div className="text-center py-12">
               <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-600 font-medium">No users found</p>

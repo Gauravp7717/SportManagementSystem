@@ -28,6 +28,8 @@ const createSport = asyncHandler(async (req, res) => {
     "_id"
   );
 
+  console.log("tenant", tenant);
+
   if (!tenant) {
     // user is not a club admin (or tenant missing)
     throw new apiError(403, "Tenant not found or you don't have permissions");
@@ -35,12 +37,14 @@ const createSport = asyncHandler(async (req, res) => {
 
   const nameTrimmed = sportName.trim();
 
-  // Prevent duplicates inside the same tenant (case-insensitive)
-  const regex = new RegExp(`^${escapeRegExp(nameTrimmed)}$`, "i");
+  console.log("sportName", sportName);
+
   const existing = await Sport.findOne({
     tenantId: tenant._id,
-    sportName: { $regex: regex },
+    sportName,
   });
+
+  console.log("existing", existing);
 
   if (existing) {
     throw new apiError(409, "Sport already exists for this tenant");
@@ -114,27 +118,84 @@ const deleteSport = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, {}, "Sport deleted successfully"));
 });
 
+// controllers/clubAdmin.controller.js - FIXED createBatch only
 const createBatch = asyncHandler(async (req, res) => {
-  const { batchStartTime, batchEndTime, sportId, coaches, students, schedule } =
-    req.body;
+  console.log("🔥 CREATE BATCH PAYLOAD:", req.body); // Debug
 
-  if (!batchStartTime || !batchEndTime || !sportId || !schedule) {
-    throw new apiError(404, "All required fields must be provided");
-  }
-
-  const sportExist = await Sport.findById(sportId);
-  if (!sportExist) {
-    throw new apiError(404, "Sport not found");
-  }
-
-  const batch = await Batch.create({
+  const {
     batchStartTime,
     batchEndTime,
     sportId,
     coaches,
     students,
     schedule,
+    batchName,
+    capacity,
+  } = req.body;
+
+
+  // ✅ CRITICAL: Get tenantId from authenticated user
+  if (!req.user || !req.user._id) {
+    throw new apiError(401, "Unauthorized - User not authenticated");
+  }
+
+  const tenant = await Tenant.findOne({ clubAdmin: req.user._id }).select(
+    "_id"
+  );
+ 
+  if (!tenant) {
+    throw new apiError(403, "Tenant not found or insufficient permissions");
+  }
+
+  // Validate required fields
+  if (
+    !batchStartTime ||
+    !batchEndTime ||
+    !sportId ||
+    !Array.isArray(schedule) ||
+    schedule.length === 0
+  ) {
+    console.log("❌ Validation failed:", {
+      batchStartTime,
+      batchEndTime,
+      sportId,
+      schedule,
+    });
+    throw new apiError(
+      400,
+      "batchStartTime, batchEndTime, sportId, and schedule (array) are required"
+    );
+  }
+
+  if (!batchName || !capacity) {
+    throw new apiError(400, "batchName and capacity are required");
+  }
+
+  // ✅ Verify sport belongs to this tenant
+  const sportExist = await Sport.findOne({
+    _id: sportId,
+    tenantId: tenant._id,
   });
+  if (!sportExist) {
+    throw new apiError(
+      404,
+      "Sport not found or not authorized for this tenant"
+    );
+  }
+
+  const batch = await Batch.create({
+    tenantId: tenant._id, // ✅ REQUIRED by schema
+    batchName,
+    capacity: parseInt(capacity),
+    batchStartTime,
+    batchEndTime,
+    sportId,
+    coaches: coaches || [],
+    students: students || [],
+    schedule, // ✅ Now array
+  });
+
+  console.log("✅ Batch created:", batch._id);
 
   return res
     .status(201)
@@ -158,60 +219,147 @@ const deleteBatch = asyncHandler(async (req, res) => {
     .status(200)
     .json(new apiResponse(200, deleted, "Batch deleted successfully"));
 });
-
-const assignCoaches = asyncHandler(async (req, res) => {
+// GET SINGLE BATCH (by id, tenant‑scoped)
+const getBatch = asyncHandler(async (req, res) => {
   const { batchId } = req.params;
-  const { coaches } = req.body;
 
-  if (!coaches || !Array.isArray(coaches)) {
-    throw new apiError(400, "Coaches must be sent as an array");
+  if (!batchId) {
+    throw new apiError(400, "Batch id is required");
   }
 
-  const batch = await Batch.findById(batchId);
+  if (!req.user || !req.user._id) {
+    throw new apiError(401, "Unauthorized - User not authenticated");
+  }
+
+  const tenant = await Tenant.findOne({ clubAdmin: req.user._id }).select("_id");
+  if (!tenant) {
+    throw new apiError(403, "Tenant not found or insufficient permissions");
+  }
+
+  const batch = await Batch.findOne({
+    _id: batchId,
+    tenantId: tenant._id,
+  })
+    .populate("sportId", "sportName")
+    .populate("coaches", "fullname fullName name email")
+    .populate("students", "name email contact");
 
   if (!batch) {
     throw new apiError(404, "Batch not found");
   }
 
-  batch.coaches = [...batch.coaches, ...coaches];
-  await batch.save();
+  return res
+    .status(200)
+    .json(new apiResponse(200, batch, "Batch fetched successfully"));
+});
+// GET ALL BATCHES (for logged‑in tenant)
+const getBatches = asyncHandler(async (req, res) => {
+  if (!req.user || !req.user._id) {
+    throw new apiError(401, "Unauthorized - User not authenticated");
+  }
+
+  const tenant = await Tenant.findOne({ clubAdmin: req.user._id }).select("_id");
+  if (!tenant) {
+    throw new apiError(403, "Tenant not found or insufficient permissions");
+  }
+
+  const batches = await Batch.find({ tenantId: tenant._id })
+    .populate("sportId", "sportName")
+    .populate("coaches", "fullname fullName name email")
+    .populate("students", "name email contact")
+    .sort({ createdAt: -1 });
 
   return res
     .status(200)
-    .json(new apiResponse(200, batch, "Coaches assigned successfully"));
+    .json(
+      new apiResponse(200, batches, "Batches fetched successfully")
+    );
 });
-
-const assignStudents = asyncHandler(async (req, res) => {
+// UPDATE BATCH (tenant‑scoped)
+const updateBatch = asyncHandler(async (req, res) => {
   const { batchId } = req.params;
-  const { students } = req.body;
+  const {
+    batchName,
+    capacity,
+    batchStartTime,
+    batchEndTime,
+    sportId,
+    coaches,
+    students,
+    schedule,
+  } = req.body;
 
-  if (!students || !Array.isArray(students)) {
-    throw new apiError(400, "Students must be sent as an array");
+  if (!batchId) {
+    throw new apiError(400, "Batch id is required");
   }
 
-  students.forEach((st) => {
-    if (!st.name || !st.contact) {
-      throw new apiError(400, "Each student must have name and contact");
+  if (!req.user || !req.user._id) {
+    throw new apiError(401, "Unauthorized - User not authenticated");
+  }
+
+  const tenant = await Tenant.findOne({ clubAdmin: req.user._id }).select("_id");
+  if (!tenant) {
+    throw new apiError(403, "Tenant not found or insufficient permissions");
+  }
+
+  // If sportId is being changed, verify it belongs to this tenant
+  if (sportId) {
+    const sportExist = await Sport.findOne({
+      _id: sportId,
+      tenantId: tenant._id,
+    });
+    if (!sportExist) {
+      throw new apiError(
+        404,
+        "Sport not found or not authorized for this tenant"
+      );
     }
-  });
-
-  const batch = await Batch.findById(batchId);
-
-  if (!batch) {
-    throw new apiError(404, "Batch not found");
   }
 
-  batch.students = [...batch.students, ...students];
-  await batch.save();
+  if (schedule && (!Array.isArray(schedule) || schedule.length === 0)) {
+    throw new apiError(
+      400,
+      "schedule must be a non-empty array if provided"
+    );
+  }
+
+  const updateData = {};
+  if (batchName !== undefined) updateData.batchName = batchName.trim();
+  if (capacity !== undefined) updateData.capacity = parseInt(capacity);
+  if (batchStartTime !== undefined) updateData.batchStartTime = batchStartTime;
+  if (batchEndTime !== undefined) updateData.batchEndTime = batchEndTime;
+  if (sportId !== undefined) updateData.sportId = sportId;
+  if (coaches !== undefined) updateData.coaches = coaches;
+  if (students !== undefined) updateData.students = students;
+  if (schedule !== undefined) updateData.schedule = schedule;
+
+  const updatedBatch = await Batch.findOneAndUpdate(
+    { _id: batchId, tenantId: tenant._id },
+    { $set: updateData },
+    {
+      new: true,
+      runValidators: true,
+    }
+  )
+    .populate("sportId", "sportName")
+    .populate("coaches", "fullname fullName name email")
+    .populate("students", "name email contact");
+
+  if (!updatedBatch) {
+    throw new apiError(404, "Batch not found or not authorized");
+  }
 
   return res
     .status(200)
-    .json(new apiResponse(200, batch, "Students assigned successfully"));
+    .json(
+      new apiResponse(200, updatedBatch, "Batch updated successfully")
+    );
 });
+
 
 const createStudent = asyncHandler(async (req, res) => {
   const {
-    tenantId,
+   
     name,
     email,
     contact,
@@ -219,14 +367,45 @@ const createStudent = asyncHandler(async (req, res) => {
     joiningDate,
     sports,
     feeStatus,
+    batchId,
   } = req.body;
 
-  if (!tenantId || !name || !dob || !joiningDate || !email || !contact) {
-    throw new apiError(400, "tenantId, name, dob and joiningDate are required");
+ // In your controller, change this line:
+if (!name || !dob || !joiningDate || !email || !contact || !batchId || !sports) {
+  throw new apiError(400, "name, email, contact, dob, joiningDate, sports, and batchId are required");
+}
+
+
+  const tenant = await Tenant.findOne({ clubAdmin: req.user._id }).select(
+    "_id"
+  );
+ 
+  if (!tenant) {
+    throw new apiError(403, "Tenant not found or insufficient permissions");
   }
 
-  const student = await Student.create({
-    tenantId,
+
+    const student = await Student.create({
+      tenantId:tenant._id,
+      name,
+      email,
+      contact,
+      dob,
+      joiningDate,
+      sports,
+      feeStatus,
+      batchId,
+    });
+
+    return res
+      .status(201)
+      .json(new apiResponse(201, student, "Student created successfully"));
+  });
+
+// ✅ UPDATE STUDENT
+const updateStudent = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const {
     name,
     email,
     contact,
@@ -234,11 +413,112 @@ const createStudent = asyncHandler(async (req, res) => {
     joiningDate,
     sports,
     feeStatus,
-  });
+    batchId,
+  } = req.body;
+
+  // Validate required fields for update (allow partial updates)
+  if (!id) {
+    throw new apiError(400, "Student ID is required");
+  }
+
+  const tenant = await Tenant.findOne({ clubAdmin: req.user._id }).select("_id");
+  if (!tenant) {
+    throw new apiError(403, "Tenant not found or insufficient permissions");
+  }
+
+  // Find and update student
+  const student = await Student.findOneAndUpdate(
+    { _id: id, tenantId: tenant._id },
+    {
+      name,
+      email,
+      contact,
+      dob,
+      joiningDate,
+      sports,
+      feeStatus,
+      batchId,
+    },
+    { new: true, runValidators: true }
+  );
+
+  if (!student) {
+    throw new apiError(404, "Student not found or access denied");
+  }
 
   return res
-    .status(201)
-    .json(new apiResponse(201, student, "Student created successfully"));
+    .status(200)
+    .json(new apiResponse(200, student, "Student updated successfully"));
+});
+
+// ✅ DELETE STUDENT
+const deleteStudent = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    throw new apiError(400, "Student ID is required");
+  }
+
+  const tenant = await Tenant.findOne({ clubAdmin: req.user._id }).select("_id");
+  if (!tenant) {
+    throw new apiError(403, "Tenant not found or insufficient permissions");
+  }
+
+  const student = await Student.findOneAndDelete({
+    _id: id,
+    tenantId: tenant._id,
+  });
+
+  if (!student) {
+    throw new apiError(404, "Student not found or access denied");
+  }
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, student, "Student deleted successfully"));
+});
+
+// ✅ GET SINGLE STUDENT
+const getStudent = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    throw new apiError(400, "Student ID is required");
+  }
+
+  const tenant = await Tenant.findOne({ clubAdmin: req.user._id }).select("_id");
+  if (!tenant) {
+    throw new apiError(403, "Tenant not found or insufficient permissions");
+  }
+
+  const student = await Student.findOne({ _id: id, tenantId: tenant._id })
+    .populate("sports", "sportName")
+    .populate("batchId", "name batchName");
+
+  if (!student) {
+    throw new apiError(404, "Student not found or access denied");
+  }
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, student, "Student retrieved successfully"));
+});
+
+// ✅ GET ALL STUDENTS (TENANT-SCOPED)
+const getStudents = asyncHandler(async (req, res) => {
+  const tenant = await Tenant.findOne({ clubAdmin: req.user._id }).select("_id");
+  if (!tenant) {
+    throw new apiError(403, "Tenant not found or insufficient permissions");
+  }
+
+  const students = await Student.find({ tenantId: tenant._id })
+    .populate("sports", "sportName")
+    .populate("batchId", "name batchName")
+    .sort({ createdAt: -1 });
+
+  return res
+    .status(200)
+    .json(new apiResponse(200, students, "Students retrieved successfully"));
 });
 
 export {
@@ -247,7 +527,13 @@ export {
   deleteSport,
   getSports,
   createSport,
-  assignCoaches,
-  assignStudents,
   createStudent,
+  updateStudent,      // ✅ NEW
+  deleteStudent,      // ✅ NEW
+  getStudent,         // ✅ NEW
+  getStudents,        // ✅ NEW (renamed from getStudents to match your frontend)
+  getBatches,
+  getBatch,
+  updateBatch,
 };
+

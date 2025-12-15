@@ -1,14 +1,19 @@
 import express from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import {
-  assignCoaches,
-  assignStudents,
   createBatch,
   createSport,
   createStudent,
   deleteBatch,
   deleteSport,
   getSports,
+  getBatches,
+  getBatch,
+  updateBatch,
+  updateStudent,
+  deleteStudent,
+  getStudent,
+  getStudents,
 } from "../controllers/clubAdmin.controller.js";
 import { authrizeRole } from "../middlewares/role.middleware.js";
 
@@ -33,11 +38,61 @@ clubAdminRouter.delete(
   deleteSport
 );
 
-clubAdminRouter.post("/create-batch", verifyJWT, createBatch);
-clubAdminRouter.delete("/delete-batch/:batchId", verifyJWT, deleteBatch);
-clubAdminRouter.put("/assign-coaches/:batchId", verifyJWT, assignCoaches);
-clubAdminRouter.put("/assign-students/:batchId", verifyJWT, assignStudents);
+clubAdminRouter.post(
+  "/create-batch",
+  verifyJWT,
+  authrizeRole("CLUB_ADMIN"),
+  createBatch
+);
+clubAdminRouter.delete(
+  "/delete-batch/:batchId",
+  verifyJWT,
+  authrizeRole("CLUB_ADMIN"),
+  deleteBatch
+);
 
-studentRouter.post("/create-student", verifyJWT, createStudent);
+clubAdminRouter.post(
+  "/create-student",
+  verifyJWT,
+  authrizeRole("CLUB_ADMIN"),
+  createStudent
+);
+// routes/clubAdmin.routes.js
+clubAdminRouter.get(
+  "/get-batches",
+  verifyJWT,
+  authrizeRole("CLUB_ADMIN"),
+  getBatches
+);
+
+clubAdminRouter.get(
+  "/get-batch/:batchId",
+  verifyJWT,
+  authrizeRole("CLUB_ADMIN"),
+  getBatch
+);
+
+clubAdminRouter.put(
+  "/update-batch/:batchId",
+  verifyJWT,
+  authrizeRole("CLUB_ADMIN"),
+  updateBatch
+);
+
+clubAdminRouter.post("/", verifyJWT, authrizeRole("CLUB_ADMIN"), createStudent);
+clubAdminRouter.put(
+  "/update-student/:id",
+  verifyJWT,
+  authrizeRole("CLUB_ADMIN"),
+  updateStudent
+); // ✅
+clubAdminRouter.delete(
+  "/delete-student/:id",
+  verifyJWT,
+  authrizeRole("CLUB_ADMIN"),
+  deleteStudent
+); // ✅
+clubAdminRouter.get("/get-student/:id", verifyJWT, authrizeRole("CLUB_ADMIN"), getStudent); // ✅
+clubAdminRouter.get("/get-students", verifyJWT, authrizeRole("CLUB_ADMIN"), getStudents);
 
 export default clubAdminRouter;

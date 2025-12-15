@@ -11,7 +11,6 @@ const sportSchema = new mongoose.Schema(
     sportName: {
       type: String,
       required: true,
-      unique: true,
     },
 
     description: {

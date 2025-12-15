@@ -1,421 +1,356 @@
-import React, { useState } from 'react';
-import { UserPlus, User, Calendar, Phone, DollarSign, CreditCard, Clock, List, Edit2, Trash2, Eye } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  UserPlus,
+  User,
+  Calendar,
+  Phone,
+  List,
+  Edit2,
+  Trash2,
+  Loader2,
+} from "lucide-react";
+
+import { createStudent, getStudents } from "../../api/studentApi";
+import { getSports } from "../../api/clubadminapi";
+import { getBatches } from "../../api/batchapi";
 
 const Student = () => {
   const [showStudentList, setShowStudentList] = useState(false);
   const [students, setStudents] = useState([]);
-  const [ editId , setEditId ] = useState ( null );
+  const [sportsList, setSportsList] = useState([]);
+  const [batchesList, setBatchesList] = useState([]);
+  const [editId, setEditId] = useState(null);
+
+  const [loading, setLoading] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [loadingSports, setLoadingSports] = useState(false);
+  const [loadingBatches, setLoadingBatches] = useState(false);
+
   const [formData, setFormData] = useState({
-    studentName: '',
-    sportName: '',
-    batchName: '',
-    joiningDate: '',
-    contactNumber: '',
-    amountPaid: '',
-    paymentMethod: ''
+    name: "",
+    email: "",
+    contact: "",
+    dob: "",
+    joiningDate: "",
+    sports: "",
+    feeStatus: "PAID",
+    batchId: "",
   });
 
-  const sports = ['Cricket', 'Football', 'Badminton', 'Basketball'];
-  const batches = ['Morning Batch (6AM - 8AM)', 'Evening Batch (5PM - 7PM)', 'Weekend Batch (8AM - 10AM)'];
-  const paymentMethods = ['Cash', 'UPI', 'Credit Card', 'Debit Card', 'Net Banking'];
+  /* ===================== FETCH DATA ===================== */
 
-  const sportColors = {
-    'Cricket': 'bg-emerald-100 text-emerald-700',
-    'Football': 'bg-blue-100 text-blue-700',
-    'Badminton': 'bg-purple-100 text-purple-700',
-    'Basketball': 'bg-orange-100 text-orange-700'
-  };
+  useEffect(() => {
+    fetchSports();
+    fetchBatches();
+  }, []);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  useEffect(() => {
+    if (showStudentList) fetchStudents();
+  }, [showStudentList]);
 
-  const handleSubmit = () => {
-  if (
-    !formData.studentName ||
-    !formData.sportName ||
-    !formData.batchName ||
-    !formData.joiningDate ||
-    !formData.contactNumber ||
-    !formData.amountPaid ||
-    !formData.paymentMethod
-  ) {
-    alert('Please fill all required fields');
-    return;
-  }
-
-  if (editId) {
-    // UPDATE STUDENT
-    setStudents(prev =>
-      prev.map(student =>
-        student.id === editId ? { ...student, ...formData } : student
-      )
-    );
-
-    alert('Student updated successfully!');
-    setEditId(null);
-  } else {
-    // ADD STUDENT
-    const newStudent = {
-      id: Date.now(),
-      ...formData
-    };
-
-    setStudents(prev => [...prev, newStudent]);
-    alert('Student added successfully!');
-  }
-
-  // Reset form
-  setFormData({
-    studentName: '',
-    sportName: '',
-    batchName: '',
-    joiningDate: '',
-    contactNumber: '',
-    amountPaid: '',
-    paymentMethod: ''
-  });
-};
- 
- const handleEdit = (student) => {
-  setFormData({
-    studentName: student.studentName,
-    sportName: student.sportName,
-    batchName: student.batchName,
-    joiningDate: student.joiningDate,
-    contactNumber: student.contactNumber,
-    amountPaid: student.amountPaid,
-    paymentMethod: student.paymentMethod
-  });
-
-  setEditId(student.id);
-  setShowStudentList(false); // Switch to form view automatically
-};
-
-
-  const handleClear = () => {
-    setFormData({
-      studentName: '',
-      sportName: '',
-      batchName: '',
-      joiningDate: '',
-      contactNumber: '',
-      amountPaid: '',
-      paymentMethod: ''
-    });
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this student?')) {
-      setStudents(prev => prev.filter(student => student.id !== id));
+  const fetchSports = async () => {
+    try {
+      setLoadingSports(true);
+      const res = await getSports();
+      if (res?.success !== false) setSportsList(res.data || []);
+    } finally {
+      setLoadingSports(false);
     }
   };
 
+  const fetchBatches = async () => {
+    try {
+      setLoadingBatches(true);
+      const res = await getBatches();
+      if (res?.success !== false) setBatchesList(res.data || []);
+    } finally {
+      setLoadingBatches(false);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      setLoadingStudents(true);
+      const res = await getStudents();
+      if (res?.success !== false) setStudents(res.data || []);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  /* ===================== HANDLERS ===================== */
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "contact" ? value.replace(/\D/g, "") : value,
+    }));
+  };
+
+  /* ===================== VALIDATION (BACKEND MATCH) ===================== */
+
+  const validateForm = () => {
+    const { name, email, contact, dob, joiningDate, sports, batchId } =
+      formData;
+
+    if (!name.trim()) return false;
+    if (!email.trim()) return false;
+    if (contact.length < 10) return false;
+    if (!dob) return false;
+    if (!joiningDate) return false;
+    if (!sports) return false;
+    if (!batchId) return false;
+
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      alert("Please fill all required fields correctly");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        contact: formData.contact,
+        dob: formData.dob,
+        joiningDate: formData.joiningDate,
+        sports: formData.sports,
+        feeStatus: formData.feeStatus,
+        batchId: formData.batchId,
+      };
+
+      const res = await createStudent(payload);
+      if (res?.success !== false) {
+        alert("Student added successfully!");
+        resetForm();
+        if (showStudentList) fetchStudents();
+      } else {
+        alert(res?.message || "Failed");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      contact: "",
+      dob: "",
+      joiningDate: "",
+      sports: "",
+      feeStatus: "PAID",
+      batchId: "",
+    });
+    setEditId(null);
+  };
+
+  /* ===================== UI ===================== */
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Toggle Button */}
+        {/* Toggle Button - Enhanced with icons */}
         <div className="mb-6 flex justify-end">
           <button
             onClick={() => setShowStudentList(!showStudentList)}
-            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-all shadow-sm"
+            className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all"
           >
-            {showStudentList ? <UserPlus className="w-4 h-4" /> : <List className="w-4 h-4" />}
-            {showStudentList ? 'Add Student' : 'View Student List'}
+            {showStudentList ? <UserPlus size={16} /> : <List size={16} />}
+            {showStudentList ? "Add Student" : "View Students"}
           </button>
         </div>
 
         {!showStudentList ? (
-          <>
-            {/* Header */}
-            <div className="mb-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-2 rounded-lg">
-                  <UserPlus className="w-6 h-6 text-white" />
-                </div>
-                <h1 className="text-2xl font-bold text-gray-800">Add New Student</h1>
-              </div>
-              <p className="text-sm text-gray-600">Fill in the student details to enroll them in the club</p>
-            </div>
+          /* Add Student Form */
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-bold mb-4">Add Student</h2>
 
-            {/* Form Card */}
-            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Student Name */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Student Name <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      name="studentName"
-                      value={formData.studentName}
-                      onChange={handleChange}
-                      className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
-                      placeholder="Enter student full name"
-                    />
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {/* Name */}
+              <input
+                name="name"
+                placeholder="Name"
+                value={formData.name}
+                onChange={handleChange}
+                className="border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+              />
 
-                {/* Sport Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Sport <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="sportName"
-                    value={formData.sportName}
-                    onChange={handleChange}
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all bg-white"
-                  >
-                    <option value="">Select a sport</option>
-                    {sports.map((sport) => (
-                      <option key={sport} value={sport}>{sport}</option>
-                    ))}
-                  </select>
-                </div>
+              {/* Email */}
+              <input
+                name="email"
+                type="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={handleChange}
+                className="border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+              />
 
-                {/* Batch Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Allocated Batch <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Clock className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <select
-                      name="batchName"
-                      value={formData.batchName}
-                      onChange={handleChange}
-                      className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all bg-white"
-                    >
-                      <option value="">Select a batch</option>
-                      {batches.map((batch) => (
-                        <option key={batch} value={batch}>{batch}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Joining Date */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Joining Date <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Calendar className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="date"
-                      name="joiningDate"
-                      value={formData.joiningDate}
-                      onChange={handleChange}
-                      className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Contact Number */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Contact Number <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Phone className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="tel"
-                      name="contactNumber"
-                      value={formData.contactNumber}
-                      onChange={handleChange}
-                      className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
-                      placeholder="10-digit mobile number"
-                    />
-                  </div>
-                </div>
-
-                {/* Amount Paid */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Amount Paid <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <DollarSign className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="number"
-                      name="amountPaid"
-                      value={formData.amountPaid}
-                      onChange={handleChange}
-                      min="0"
-                      step="0.01"
-                      className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
-                      placeholder="Enter amount"
-                    />
-                  </div>
-                </div>
-
-                {/* Payment Method */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Payment Method <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <CreditCard className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <select
-                      name="paymentMethod"
-                      value={formData.paymentMethod}
-                      onChange={handleChange}
-                      className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all bg-white"
-                    >
-                      <option value="">Select payment method</option>
-                      {paymentMethods.map((method) => (
-                        <option key={method} value={method}>{method}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+              {/* Contact */}
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  name="contact"
+                  placeholder="Contact"
+                  value={formData.contact}
+                  onChange={handleChange}
+                  className="border border-gray-300 pl-10 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all w-full"
+                />
               </div>
 
-              {/* Submit Button */}
-              <div className="mt-6 flex gap-3">
-                <button
-                  onClick={handleSubmit}
-                  className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-2.5 rounded-lg font-medium hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all shadow-md hover:shadow-lg"
+              {/* DOB */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  name="dob"
+                  value={formData.dob}
+                  onChange={handleChange}
+                  className="border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all w-full"
+                />
+              </div>
+
+              {/* Joining Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Joining Date
+                </label>
+                <input
+                  type="date"
+                  name="joiningDate"
+                  value={formData.joiningDate}
+                  onChange={handleChange}
+                  className="border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all w-full"
+                />
+              </div>
+
+              {/* Sport Select */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sport
+                </label>
+                <select
+                  name="sports"
+                  value={formData.sports}
+                  onChange={handleChange}
+                  className="border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all w-full appearance-none bg-white"
+                  disabled={loadingSports}
                 >
-                  Add Student
-                </button>
-                <button
-                  onClick={handleClear}
-                  className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
+                  <option value="">Select Sport</option>
+                  {sportsList.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.sportName}
+                    </option>
+                  ))}
+                </select>
+                {loadingSports && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Loading sports...
+                  </div>
+                )}
+              </div>
+
+              {/* Batch Select */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Batch
+                </label>
+                <select
+                  name="batchId"
+                  value={formData.batchId}
+                  onChange={handleChange}
+                  className="border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all w-full appearance-none bg-white"
+                  disabled={loadingBatches}
                 >
-                  Clear
-                </button>
+                  <option value="">Select Batch</option>
+                  {batchesList.map((b) => (
+                    <option key={b._id} value={b._id}>
+                      {b.name || b.batchName}
+                    </option>
+                  ))}
+                </select>
+                {loadingBatches && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Loading batches...
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Info Card */}
-            <div className="mt-5 bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800">
-                <span className="font-semibold">Note:</span> All fields marked with <span className="text-red-500">*</span> are required. Make sure to verify the student details before submission.
-              </p>
-            </div>
-          </>
+            {/* Submit Button */}
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Add Student"
+              )}
+            </button>
+          </div>
         ) : (
-          <>
-            {/* Student List Header */}
-            <div className="mb-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-2 rounded-lg">
-                  <List className="w-6 h-6 text-white" />
-                </div>
-                <h1 className="text-2xl font-bold text-gray-800">Student List</h1>
-              </div>
-              <p className="text-sm text-gray-600">View and manage all enrolled students</p>
-            </div>
+          /* Student List */
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Student List
+            </h2>
 
-            {/* Student List */}
-            {students.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md border border-gray-200 p-12 text-center">
-                <div className="max-w-sm mx-auto">
-                  <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                    <User className="w-10 h-10 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">No Students Added Yet</h3>
-                  <p className="text-sm text-gray-600 mb-4">Start by adding your first student to the club</p>
-                  <button
-                    onClick={() => setShowStudentList(false)}
-                    className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-5 py-2 rounded-lg font-medium hover:from-indigo-600 hover:to-purple-700 transition-all inline-flex items-center gap-2"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Add Student
-                  </button>
-                </div>
+            {loadingStudents ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+              </div>
+            ) : students.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                No students found. Add your first student!
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Student Name</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Sport</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Batch</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Joining Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Contact</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Amount</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Payment</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {students.map((student) => (
-                        <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-8 w-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-                                <span className="text-white text-sm font-medium">{student.studentName.charAt(0)}</span>
-                              </div>
-                              <div className="ml-3">
-                                <div className="text-sm font-medium text-gray-900">{student.studentName}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${sportColors[student.sportName]}`}>
-                              {student.sportName}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{student.batchName}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{student.joiningDate}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{student.contactNumber}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">₹{student.amountPaid}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{student.paymentMethod}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium gap-3">
-                             <button
-                                onClick={() => handleEdit(student)}
-                                className="text-indigo-600 hover:text-indigo-900 transition-colors"
-                                 title="Edit"
-                            >
-                            <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(student.id)}
-                              className="text-red-600 hover:text-red-900 transition-colors"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <div className="space-y-3">
+                {students.map((s) => (
+                  <div
+                    key={s._id}
+                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:shadow-sm transition-all group"
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                        <User className="w-6 h-6 text-indigo-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">{s.name}</p>
+                        <p className="text-sm text-gray-600">{s.email}</p>
+                        <p className="text-sm text-gray-500">
+                          {s.contact} •{" "}
+                          {new Date(s.joiningDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
 
-                {/* Student Count */}
-                <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
-                  <p className="text-sm text-gray-600">
-                    Total Students: <span className="font-semibold text-gray-800">{students.length}</span>
-                  </p>
-                </div>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                      <button className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                        <Edit2 size={16} />
+                      </button>
+                      <button className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
