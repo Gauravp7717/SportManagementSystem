@@ -1,28 +1,23 @@
 import React, { useState, useEffect } from "react";
 import {
-  UserPlus,
-  User,
-  Calendar,
   Phone,
-  List,
-  Edit2,
-  Trash2,
   Loader2,
+  User,
+  Mail,
+  Calendar,
+  Trophy,
+  Users,
 } from "lucide-react";
 
-import { createStudent, getStudents } from "../../api/studentApi";
+import { createStudent } from "../../api/studentApi";
 import { getSports } from "../../api/clubadminapi";
 import { getBatches } from "../../api/batchapi";
 
 const Student = () => {
-  const [showStudentList, setShowStudentList] = useState(false);
-  const [students, setStudents] = useState([]);
   const [sportsList, setSportsList] = useState([]);
   const [batchesList, setBatchesList] = useState([]);
-  const [editId, setEditId] = useState(null);
 
   const [loading, setLoading] = useState(false);
-  const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingSports, setLoadingSports] = useState(false);
   const [loadingBatches, setLoadingBatches] = useState(false);
 
@@ -44,10 +39,6 @@ const Student = () => {
     fetchBatches();
   }, []);
 
-  useEffect(() => {
-    if (showStudentList) fetchStudents();
-  }, [showStudentList]);
-
   const fetchSports = async () => {
     try {
       setLoadingSports(true);
@@ -68,16 +59,6 @@ const Student = () => {
     }
   };
 
-  const fetchStudents = async () => {
-    try {
-      setLoadingStudents(true);
-      const res = await getStudents();
-      if (res?.success !== false) setStudents(res.data || []);
-    } finally {
-      setLoadingStudents(false);
-    }
-  };
-
   /* ===================== HANDLERS ===================== */
 
   const handleChange = (e) => {
@@ -88,7 +69,7 @@ const Student = () => {
     }));
   };
 
-  /* ===================== VALIDATION (BACKEND MATCH) ===================== */
+  /* ===================== VALIDATION ===================== */
 
   const validateForm = () => {
     const { name, email, contact, dob, joiningDate, sports, batchId } =
@@ -125,12 +106,12 @@ const Student = () => {
       };
 
       const res = await createStudent(payload);
+
       if (res?.success !== false) {
         alert("Student added successfully!");
         resetForm();
-        if (showStudentList) fetchStudents();
       } else {
-        alert(res?.message || "Failed");
+        alert(res?.message || "Failed to add student");
       }
     } finally {
       setLoading(false);
@@ -148,211 +129,305 @@ const Student = () => {
       feeStatus: "PAID",
       batchId: "",
     });
-    setEditId(null);
   };
 
   /* ===================== UI ===================== */
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Toggle Button - Enhanced with icons */}
-        <div className="mb-6 flex justify-end">
-          <button
-            onClick={() => setShowStudentList(!showStudentList)}
-            className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all"
-          >
-            {showStudentList ? <UserPlus size={16} /> : <List size={16} />}
-            {showStudentList ? "Add Student" : "View Students"}
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4 sm:p-6 lg:p-8">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
+      </div>
+
+      <div className="relative max-w-5xl mx-auto">
+        {/* Header Section */}
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2 sm:mb-3">
+            Add New Student
+          </h1>
+          <p className="text-gray-600 text-sm sm:text-base">
+            Fill in the details to register a new student
+          </p>
         </div>
 
-        {!showStudentList ? (
-          /* Add Student Form */
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-bold mb-4">Add Student</h2>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              {/* Name */}
-              <input
-                name="name"
-                placeholder="Name"
-                value={formData.name}
-                onChange={handleChange}
-                className="border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-              />
-
-              {/* Email */}
-              <input
-                name="email"
-                type="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={handleChange}
-                className="border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-              />
-
-              {/* Contact */}
+        {/* Form Card */}
+        <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8 lg:p-10 border border-white/20">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            {/* Name Input */}
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name <span className="text-red-500">*</span>
+              </label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                 <input
-                  name="contact"
-                  placeholder="Contact"
-                  value={formData.contact}
+                  name="name"
+                  placeholder="Enter student name"
+                  value={formData.name}
                   onChange={handleChange}
-                  className="border border-gray-300 pl-10 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all w-full"
+                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all duration-300 hover:border-gray-300"
                 />
               </div>
+            </div>
 
-              {/* DOB */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date of Birth
-                </label>
+            {/* Email Input */}
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="student@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all duration-300 hover:border-gray-300"
+                />
+              </div>
+            </div>
+
+            {/* Contact Input */}
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Contact Number <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                <input
+                  name="contact"
+                  placeholder="10-digit number"
+                  value={formData.contact}
+                  onChange={handleChange}
+                  maxLength="10"
+                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all duration-300 hover:border-gray-300"
+                />
+              </div>
+            </div>
+
+            {/* Date of Birth */}
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date of Birth <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                 <input
                   type="date"
                   name="dob"
                   value={formData.dob}
                   onChange={handleChange}
-                  className="border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all w-full"
+                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all duration-300 hover:border-gray-300"
                 />
               </div>
+            </div>
 
-              {/* Joining Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Joining Date
-                </label>
+            {/* Joining Date */}
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Joining Date <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                 <input
                   type="date"
                   name="joiningDate"
                   value={formData.joiningDate}
                   onChange={handleChange}
-                  className="border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all w-full"
+                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all duration-300 hover:border-gray-300"
                 />
               </div>
+            </div>
 
-              {/* Sport Select */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sport
-                </label>
+            {/* Sports Select */}
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Sport <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Trophy className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                 <select
                   name="sports"
                   value={formData.sports}
                   onChange={handleChange}
-                  className="border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all w-full appearance-none bg-white"
                   disabled={loadingSports}
+                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all duration-300 hover:border-gray-300 appearance-none bg-white disabled:bg-gray-50 disabled:cursor-not-allowed"
                 >
-                  <option value="">Select Sport</option>
+                  <option value="">
+                    {loadingSports ? "Loading sports..." : "Select a sport"}
+                  </option>
                   {sportsList.map((s) => (
                     <option key={s._id} value={s._id}>
                       {s.sportName}
                     </option>
                   ))}
                 </select>
-                {loadingSports && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    Loading sports...
-                  </div>
-                )}
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  {loadingSports ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                  ) : (
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  )}
+                </div>
               </div>
+            </div>
 
-              {/* Batch Select */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Batch
-                </label>
+            {/* Batch Select */}
+            <div className="group">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Batch <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                 <select
                   name="batchId"
                   value={formData.batchId}
                   onChange={handleChange}
-                  className="border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all w-full appearance-none bg-white"
                   disabled={loadingBatches}
+                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all duration-300 hover:border-gray-300 appearance-none bg-white disabled:bg-gray-50 disabled:cursor-not-allowed"
                 >
-                  <option value="">Select Batch</option>
+                  <option value="">
+                    {loadingBatches ? "Loading batches..." : "Select a batch"}
+                  </option>
                   {batchesList.map((b) => (
                     <option key={b._id} value={b._id}>
                       {b.name || b.batchName}
                     </option>
                   ))}
                 </select>
-                {loadingBatches && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    Loading batches...
-                  </div>
-                )}
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  {loadingBatches ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                  ) : (
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Submit Button */}
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Add Student"
-              )}
-            </button>
+            {/* Fee Status - Full Width on Mobile */}
+            <div className="group md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fee Status
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center space-x-3 cursor-pointer group/radio">
+                  <input
+                    type="radio"
+                    name="feeStatus"
+                    value="PAID"
+                    checked={formData.feeStatus === "PAID"}
+                    onChange={handleChange}
+                    className="w-5 h-5 text-indigo-600 focus:ring-indigo-500 focus:ring-2"
+                  />
+                  <span className="text-gray-700 font-medium group-hover/radio:text-indigo-600 transition-colors">
+                    Paid
+                  </span>
+                </label>
+                <label className="flex items-center space-x-3 cursor-pointer group/radio">
+                  <input
+                    type="radio"
+                    name="feeStatus"
+                    value="UNPAID"
+                    checked={formData.feeStatus === "UNPAID"}
+                    onChange={handleChange}
+                    className="w-5 h-5 text-indigo-600 focus:ring-indigo-500 focus:ring-2"
+                  />
+                  <span className="text-gray-700 font-medium group-hover/radio:text-indigo-600 transition-colors">
+                    Unpaid
+                  </span>
+                </label>
+              </div>
+            </div>
           </div>
-        ) : (
-          /* Student List */
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Student List
-            </h2>
 
-            {loadingStudents ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-              </div>
-            ) : students.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                No students found. Add your first student!
-              </div>
+          {/* Submit Button */}
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3 text-base sm:text-lg"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Saving Student...</span>
+              </>
             ) : (
-              <div className="space-y-3">
-                {students.map((s) => (
-                  <div
-                    key={s._id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:shadow-sm transition-all group"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <User className="w-6 h-6 text-indigo-600" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{s.name}</p>
-                        <p className="text-sm text-gray-600">{s.email}</p>
-                        <p className="text-sm text-gray-500">
-                          {s.contact} •{" "}
-                          {new Date(s.joiningDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                      <button className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-                        <Edit2 size={16} />
-                      </button>
-                      <button className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <>
+                <User className="w-5 h-5" />
+                <span>Add Student</span>
+              </>
             )}
-          </div>
-        )}
+          </button>
+        </div>
       </div>
+
+      <style jsx>{`
+        @keyframes blob {
+          0%,
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
+          25% {
+            transform: translate(20px, -50px) scale(1.1);
+          }
+          50% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          75% {
+            transform: translate(50px, 50px) scale(1.05);
+          }
+        }
+
+        .animate-blob {
+          animation: blob 20s infinite;
+        }
+
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          cursor: pointer;
+          opacity: 0.6;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+          opacity: 1;
+        }
+      `}</style>
     </div>
   );
 };

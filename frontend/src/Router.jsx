@@ -17,6 +17,7 @@ import UsersList from "./pages/SuperAdmin/UsersList";
 import AddUser from "./pages/SuperAdmin/AddUser";
 import AddTennants from "./pages/SuperAdmin/AddTennants";
 import SportsList from "./pages/clubadmin/SportsList";
+import StudentList from "./pages/clubadmin/StudentList";
 // Create this page for club admin
 
 export default function Router() {
@@ -54,6 +55,7 @@ export default function Router() {
         {/* Add other clubadmin routes here */}
         <Route path="dashboard" element={<ClubDashboard />} />
         <Route path="students" element={<Student />} />
+        <Route path="studentslist" element={<StudentList />} />
         <Route path="coaches" element={<AddCoaches />} />
         <Route path="batches" element={<AddBatch />} />
         <Route path="addsport" element={<AddSports />} />

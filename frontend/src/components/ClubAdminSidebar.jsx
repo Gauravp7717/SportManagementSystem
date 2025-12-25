@@ -34,9 +34,14 @@ const ClubAdminSidebar = () => {
       path: "/dashboard",
     },
     {
-      name: "Students",
+      name: " Add Students",
       icon: Users,
       path: "/students",
+    },
+    {
+      name: "view Students list",
+      icon: Users,
+      path: "/studentslist",
     },
     {
       name: "Coaches",

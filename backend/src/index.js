@@ -28,6 +28,8 @@ import userRouter from "./routes/user.routes.js";
 import adminRouter from "./routes/superAdmin.route.js";
 import clubAdminRouter from "./routes/clubAdmin.route.js";
 import  coachRouter from   "./routes/coach.routes.js";
+import attendanceRouter from "./routes/attendance.route.js";
+
 
 
 
@@ -37,6 +39,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/club-admin", clubAdminRouter);
 app.use("/api/v1/coach", coachRouter);
+app.use("/api/v1/attendance", attendanceRouter);
 
 // Server Start
 const port = process.env.PORT || 3000;
